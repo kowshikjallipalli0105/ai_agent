@@ -140,9 +140,21 @@ export default {
 
           let summary = 'AI Agent execution finished.';
           if (result) {
-            if (result.overallJustification) summary = result.overallJustification;
-            else if (result.summary) summary = result.summary;
-            else if (Array.isArray(result) && result.length > 0) summary = `Evaluated ${result.length} assessment factors.`;
+            if (result.message) {
+              summary = result.message;
+            } else if (result.overallJustification) {
+              summary = result.overallJustification;
+            } else if (result.details?.justification) {
+              summary = result.details.justification;
+            } else if (result.summary) {
+              summary = result.summary;
+            } else if (Array.isArray(result) && result.length > 0) {
+              summary = `Evaluated ${result.length} assessment factors.`;
+            }
+            // Prepend success/failure indicator
+            if (result.success === false) {
+              summary = '⚠️ ' + summary;
+            }
           }
 
           return jsonResponse({

@@ -343,16 +343,36 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
   async getControlsForEntity(profileSysId: string): Promise<Control[]> {
     if (this.useLive) {
       try {
-        const results = await this.queryTable<any>('sn_compliance_control', { 
-          sysparm_query: `profile=${profileSysId}^active=true` 
+        // 1. Try direct profile match first
+        let results = await this.queryTable<any>('sn_compliance_control', { 
+          sysparm_query: `profile=${profileSysId}^active=true`,
+          sysparm_limit: '100'
         });
-        return results.map(c => ({
+
+        // 2. If no results, try 'applicable_to' field (alternate profile link)
+        if (results.length === 0) {
+          results = await this.queryTable<any>('sn_compliance_control', {
+            sysparm_query: `applicable_to=${profileSysId}^active=true`,
+            sysparm_limit: '100'
+          });
+        }
+
+        // 3. If still nothing, fetch all active controls (broad fallback for any entity)
+        if (results.length === 0) {
+          console.warn(`[ServiceNowAdapter] No profile-specific controls found for profile ${profileSysId}, fetching all active controls.`);
+          results = await this.queryTable<any>('sn_compliance_control', {
+            sysparm_query: 'active=true',
+            sysparm_limit: '50'
+          });
+        }
+
+        return results.map((c: any) => ({
           sysId: getValue(c.sys_id),
           name: getDisplayValue(c.name) || getDisplayValue(c.short_description),
           description: getDisplayValue(c.description),
           category: getDisplayValue(c.category) || 'General',
-          profileSysId: getValue(c.profile),
-          active: getValue(c.active) === 'true'
+          profileSysId: getValue(c.profile) || profileSysId,
+          active: getValue(c.active) === 'true' || c.active === true
         }));
       } catch (e: any) {
         console.warn(`[ServiceNowAdapter] Live query failed for getControlsForEntity. Error: ${e.message}`);
