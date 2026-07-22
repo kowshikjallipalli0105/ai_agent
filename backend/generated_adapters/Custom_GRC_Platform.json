@@ -1,0 +1,68 @@
+{
+  "platformName": "Custom GRC Platform",
+  "connectionType": "generic-rest",
+  "entityLabel": "Entity",
+  "generatedAt": "2026-07-18T04:49:07.638Z",
+  "schemaFingerprint": "ebd782d5cf79e1c0ecf70e8de9737793b00985c0b7e8683252da3d052d58812a",
+  "origin": "pasted-metadata",
+  "tables": [
+    {
+      "sourceTableName": "risk_assessment_methodology",
+      "targetAgnosticModel": "Factor",
+      "fieldMappings": [
+        {
+          "sourceField": "methodology_id",
+          "agnosticField": "id",
+          "rationale": "Unique identifier for the risk assessment methodology record.",
+          "confidence": 0.5
+        },
+        {
+          "sourceField": "methodology_name",
+          "agnosticField": "name",
+          "rationale": "The display name of the methodology used to evaluate risk.",
+          "confidence": 0.5
+        },
+        {
+          "sourceField": "description",
+          "agnosticField": "description",
+          "rationale": "Detailed explanation of the methodology and its scoring criteria.",
+          "confidence": 0.5
+        },
+        {
+          "sourceField": "scoring_logic",
+          "agnosticField": "logic_expression",
+          "rationale": "The mathematical or qualitative formula used to derive risk scores.",
+          "confidence": 0.5
+        },
+        {
+          "sourceField": "weight",
+          "agnosticField": "weight",
+          "rationale": "The relative importance of this methodology factor in the overall risk calculation.",
+          "confidence": 0.5
+        },
+        {
+          "sourceField": "is_active",
+          "agnosticField": "status",
+          "rationale": "Boolean flag indicating if the methodology is currently in use.",
+          "confidence": 0.5
+        }
+      ],
+      "relationships": {
+        "RiskLink": "risk_id",
+        "AssessmentLink": "assessment_instance_id",
+        "BusinessUnitLink": "department_id"
+      },
+      "confidence": 0.5
+    }
+  ],
+  "validation": {
+    "validated": false,
+    "sampleChecks": [
+      {
+        "table": "ALL",
+        "ok": false,
+        "notes": "Pasted-metadata mode has no live connection to sample-validate against."
+      }
+    ]
+  }
+}

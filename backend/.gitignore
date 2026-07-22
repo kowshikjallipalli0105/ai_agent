@@ -1,0 +1,12 @@
+# Environment secrets
+.env
+.env.*
+.dev.vars
+
+# Dependencies
+node_modules/
+
+# Build artifacts & Cloudflare local dev cache
+dist/
+.wrangler/
+*.log

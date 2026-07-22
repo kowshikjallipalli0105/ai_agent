@@ -1,0 +1,715 @@
+{
+  "platformName": "Salesforce GRC (Live Discovered)",
+  "connectionType": "salesforce-soql",
+  "entityLabel": "Business Unit",
+  "generatedAt": "2026-07-20T13:40:30.568Z",
+  "schemaFingerprint": "55393b9b0b0acfafcceda04113885d2256378dd68eb0af758c9f7fe51b839c42",
+  "origin": "live-introspection",
+  "tables": [
+    {
+      "sourceTableName": "Risk__Control_Assessment__c",
+      "targetAgnosticModel": "Factor",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Seeded from the gold-standard catalog (hand-written adapter): the LLM confirmation call for this large object timed out twice, but its mapping is known-correct from the verified SalesforceAdapter, which reads and writes this exact object for control-effectiveness answers.",
+          "confidence": 1
+        },
+        {
+          "sourceField": "Risk__Control_Effectiveness__c",
+          "agnosticField": "factorName",
+          "rationale": "Seeded from gold standard — the effectiveness rating picklist on the control answer row.",
+          "confidence": 1
+        }
+      ],
+      "relationships": {
+        "control": "Risk__Risk_Control_Lookup__r.Risk__Control__c",
+        "assessment": "Risk__Risk_Control_Lookup__r.Risk__Risk__c"
+      },
+      "writeHeuristics": {
+        "scoreField": "Risk__Control_Effectiveness_Value__c",
+        "justificationField": "Risk__Justification__c"
+      },
+      "confidence": 1
+    },
+    {
+      "sourceTableName": "grc__Issue__c",
+      "targetAgnosticModel": "Issue",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Primary system identifier for the record.",
+          "confidence": 0.7097946463183722
+        },
+        {
+          "sourceField": "grc__ID__c",
+          "agnosticField": "number",
+          "rationale": "Business-facing identifier or reference number for the issue.",
+          "confidence": 0.6245018710113434
+        },
+        {
+          "sourceField": "grc__Description__c",
+          "agnosticField": "desc",
+          "rationale": "Detailed textual description of the issue.",
+          "confidence": 0.7154600317840003
+        },
+        {
+          "sourceField": "grc__Status__c",
+          "agnosticField": "state",
+          "rationale": "The current workflow state or status of the issue.",
+          "confidence": 0.6569339448384165
+        }
+      ],
+      "relationships": {
+        "profile": "Issue_Validator__c",
+        "control": "Control_Test__c",
+        "assessment": "Associated_Monitoring_Programme__c"
+      },
+      "writeHeuristics": {},
+      "confidence": 0.676672623488033
+    },
+    {
+      "sourceTableName": "grc__Control_Test_Result__c",
+      "targetAgnosticModel": "TestEvidence",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Maps the unique record identifier to the system ID.",
+          "confidence": 0.6830731554534832
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "number",
+          "rationale": "Maps the control test result number to the agnostic number field.",
+          "confidence": 0.753186879956924
+        },
+        {
+          "sourceField": "grc__Date_Of_Test__c",
+          "agnosticField": "resultDate",
+          "rationale": "Maps the specific date the test was conducted to the result date.",
+          "confidence": 0.7488123163256643
+        },
+        {
+          "sourceField": "grc__Result__c",
+          "agnosticField": "effectiveness",
+          "rationale": "The picklist result of a control test directly indicates the effectiveness of the control.",
+          "confidence": 0.6734843551000492
+        },
+        {
+          "sourceField": "Testing_Comments__c",
+          "agnosticField": "latestResult",
+          "rationale": "Captures the descriptive outcome or comments of the test as the latest result evidence.",
+          "confidence": 0.6567404864458871
+        }
+      ],
+      "relationships": {
+        "control": "grc__Control_Test__c"
+      },
+      "writeHeuristics": {
+        "justificationField": "Testing_Comments__c"
+      },
+      "confidence": 0.7030594386564016
+    },
+    {
+      "sourceTableName": "Risk__Risk_Control_Lookup__c",
+      "targetAgnosticModel": "Control",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Standard mapping for the unique record identifier.",
+          "confidence": 0.7158538949281401
+        },
+        {
+          "sourceField": "IsDeleted",
+          "agnosticField": "active",
+          "rationale": "Maps the record deletion status to the agnostic active field.",
+          "confidence": 0.6671059371991118
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "name",
+          "rationale": "Maps the source record identifier name to the agnostic name field.",
+          "confidence": 0.7376906034823307
+        },
+        {
+          "sourceField": "Risk__Control_Assessment_Justification__c",
+          "agnosticField": "description",
+          "rationale": "Maps the assessment justification text to the agnostic description field.",
+          "confidence": 0.7186022616847787
+        },
+        {
+          "sourceField": "Risk__Overall_Control_Assessment__c",
+          "agnosticField": "category",
+          "rationale": "Maps the picklist-based assessment result to the agnostic category field.",
+          "confidence": 0.6750499821606076
+        }
+      ],
+      "relationships": {
+        "control": "Risk__Control__c",
+        "risk": "Risk__Risk__c",
+        "profile": "LastModifiedById"
+      },
+      "writeHeuristics": {
+        "justificationField": "Risk__Control_Assessment_Justification__c",
+        "scoreField": "Risk__Anticipated_Control_Effectiveness_Score__c"
+      },
+      "confidence": 0.7028605358909937
+    },
+    {
+      "sourceTableName": "grc__Risk__c",
+      "targetAgnosticModel": "Risk",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Maps the unique record identifier to the agnostic system ID.",
+          "confidence": 0.698883241337668
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "name",
+          "rationale": "The standard name field represents the primary title of the risk record.",
+          "confidence": 0.8800951998699376
+        },
+        {
+          "sourceField": "grc__Description__c",
+          "agnosticField": "description",
+          "rationale": "The custom description field contains the detailed narrative of the risk.",
+          "confidence": 0.7389485433950362
+        },
+        {
+          "sourceField": "grc__Risk_Owner__c",
+          "agnosticField": "profileSysId",
+          "rationale": "Maps the reference to the risk owner to the agnostic profile system identifier.",
+          "confidence": 0.715107048640106
+        },
+        {
+          "sourceField": "grc__Risk_Owner_Name__c",
+          "agnosticField": "profileName",
+          "rationale": "Maps the string representation of the owner's name to the agnostic profile name field.",
+          "confidence": 0.7543856038085003
+        }
+      ],
+      "relationships": {
+        "profile": "OwnerId",
+        "risk": "grc__Risk__c"
+      },
+      "writeHeuristics": {
+        "scoreField": "grc__Residual_Risk_Value__c"
+      },
+      "confidence": 0.7574839274102496
+    },
+    {
+      "sourceTableName": "grc__Responsibility_Risk__c",
+      "targetAgnosticModel": "Risk",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Maps the record's unique identifier to the agnostic system ID.",
+          "confidence": 0.698883241337668
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "name",
+          "rationale": "Maps the record's display name to the agnostic name field.",
+          "confidence": 0.7945560819935981
+        },
+        {
+          "sourceField": "grc__Responsibility__c",
+          "agnosticField": "profileSysId",
+          "rationale": "Maps the responsibility reference to the profile identifier.",
+          "confidence": 0.6393199806932469
+        }
+      ],
+      "relationships": {
+        "profile": "grc__Responsibility__c",
+        "risk": "grc__Risk__c"
+      },
+      "writeHeuristics": {},
+      "confidence": 0.710919768008171
+    },
+    {
+      "sourceTableName": "grc__Control_Test__c",
+      "targetAgnosticModel": "TestEvidence",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "The record ID is the primary system identifier for the test evidence.",
+          "confidence": 0.6830731554534832
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "number",
+          "rationale": "The Control Test Number is mapped to the agnostic number field for record identification.",
+          "confidence": 0.7585109957430519
+        },
+        {
+          "sourceField": "grc__Expected_Evidence__c",
+          "agnosticField": "name",
+          "rationale": "The description of expected evidence serves as the primary name or title for the evidence record.",
+          "confidence": 0.6782543954519862
+        },
+        {
+          "sourceField": "grc__Status__c",
+          "agnosticField": "status",
+          "rationale": "The status picklist directly maps to the agnostic status field.",
+          "confidence": 0.6900467047824319
+        },
+        {
+          "sourceField": "grc__Test_Summary__c",
+          "agnosticField": "latestResult",
+          "rationale": "The summary of the test execution provides the descriptive outcome of the latest result.",
+          "confidence": 0.71601062173298
+        },
+        {
+          "sourceField": "grc__Date_Last_Tested__c",
+          "agnosticField": "resultDate",
+          "rationale": "The date the test was performed maps to the result date.",
+          "confidence": 0.6851733528025264
+        },
+        {
+          "sourceField": "grc__Last_Test_Date__c",
+          "agnosticField": "resultDate",
+          "rationale": "The last test date is a direct mapping for the result date.",
+          "confidence": 0.7376876222507869
+        },
+        {
+          "sourceField": "Latest_Test_Result__c",
+          "agnosticField": "latestResult",
+          "rationale": "The latest test result picklist maps to the agnostic latestResult field.",
+          "confidence": 0.7950498575390501
+        },
+        {
+          "sourceField": "Test_Status__c",
+          "agnosticField": "status",
+          "rationale": "The test status picklist maps to the agnostic status field.",
+          "confidence": 0.7577322377045007
+        },
+        {
+          "sourceField": "Latest_Test_Date__c",
+          "agnosticField": "resultDate",
+          "rationale": "The most recent test date maps to the result date.",
+          "confidence": 0.7321757113027851
+        }
+      ],
+      "relationships": {
+        "control": "grc__Control__c"
+      },
+      "writeHeuristics": {},
+      "confidence": 0.7233714654763582
+    },
+    {
+      "sourceTableName": "grc__Issue_Item__c",
+      "targetAgnosticModel": "Issue",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "The primary unique identifier for the record in the source system.",
+          "confidence": 0.7097946463183722
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "number",
+          "rationale": "The Name field typically serves as the human-readable reference or identifier for the issue item.",
+          "confidence": 0.6435129286182865
+        },
+        {
+          "sourceField": "grc__Source_Name__c",
+          "agnosticField": "desc",
+          "rationale": "The source name provides descriptive context for the associated issue item.",
+          "confidence": 0.631612406945481
+        }
+      ],
+      "relationships": {
+        "profile": "LastModifiedById"
+      },
+      "writeHeuristics": {},
+      "confidence": 0.6616399939607133
+    },
+    {
+      "sourceTableName": "Risk__Control_KCI_Lookup__c",
+      "targetAgnosticModel": "Control",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Standard mapping of the primary record identifier to the agnostic system ID.",
+          "confidence": 0.7158538949281401
+        },
+        {
+          "sourceField": "IsDeleted",
+          "agnosticField": "active",
+          "rationale": "Maps the record's deletion status to the agnostic active/inactive boolean.",
+          "confidence": 0.6671059371991118
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "name",
+          "rationale": "Maps the Control KCI Number to the primary name field.",
+          "confidence": 0.7586972611515164
+        }
+      ],
+      "relationships": {
+        "control": "Risk__Control__c",
+        "risk": "Risk__KCI__c",
+        "profile": "LastModifiedById"
+      },
+      "writeHeuristics": {
+        "scoreField": "Risk__Average_Score__c"
+      },
+      "confidence": 0.7138856977595894
+    },
+    {
+      "sourceTableName": "Risk__Process_Control_Lookup__c",
+      "targetAgnosticModel": "Control",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Standard mapping for record identifier.",
+          "confidence": 0.7158538949281401
+        },
+        {
+          "sourceField": "IsDeleted",
+          "agnosticField": "active",
+          "rationale": "Mapping deletion status to active state.",
+          "confidence": 0.6671059371991118
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "name",
+          "rationale": "Mapping process control number to name field.",
+          "confidence": 0.7304635659273064
+        },
+        {
+          "sourceField": "Risk__Process__c",
+          "agnosticField": "profileSysId",
+          "rationale": "Mapping process reference to profile system identifier.",
+          "confidence": 0.5869641515449256
+        }
+      ],
+      "relationships": {
+        "control": "Risk__Control__c",
+        "profile": "Risk__Process__c"
+      },
+      "writeHeuristics": {},
+      "confidence": 0.675096887399871
+    },
+    {
+      "sourceTableName": "grc__Compliance_Test_Result__c",
+      "targetAgnosticModel": "TestEvidence",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "The unique identifier for the compliance test result record.",
+          "confidence": 0.6830731554534832
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "number",
+          "rationale": "The source field represents the test result number, which aligns with the agnostic number field.",
+          "confidence": 0.7876842952580285
+        },
+        {
+          "sourceField": "CreatedDate",
+          "agnosticField": "resultDate",
+          "rationale": "The creation date of the record is the most appropriate representation of the result date.",
+          "confidence": 0.6957358910795641
+        }
+      ],
+      "relationships": {
+        "profile": "LastModifiedById"
+      },
+      "writeHeuristics": {},
+      "confidence": 0.722164447263692
+    },
+    {
+      "sourceTableName": "grc__Risk_Resource__c",
+      "targetAgnosticModel": "Risk",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Maps the unique record identifier to the agnostic system ID.",
+          "confidence": 0.698883241337668
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "name",
+          "rationale": "Maps the risk asset identifier to the agnostic name field.",
+          "confidence": 0.8270590436410975
+        },
+        {
+          "sourceField": "grc__Resource__c",
+          "agnosticField": "profileSysId",
+          "rationale": "Maps the reference to the associated resource or asset to the profile system identifier.",
+          "confidence": 0.6151568473794644
+        }
+      ],
+      "relationships": {
+        "risk": "grc__Risk__c",
+        "profile": "grc__Resource__c"
+      },
+      "writeHeuristics": {},
+      "confidence": 0.7136997107860766
+    },
+    {
+      "sourceTableName": "Risk__Risk_Assessment_Rating__c",
+      "targetAgnosticModel": "Factor",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "The unique record identifier for the assessment rating.",
+          "confidence": 0.6408501533105957
+        },
+        {
+          "sourceField": "Risk__Category__c",
+          "agnosticField": "factorName",
+          "rationale": "Adjusted from Name (RAR-xxxxx record numbers) to the rating category picklist — Likelihood/Impact is the factor being scored, matching the inherent-assessment workflow.",
+          "confidence": 0.7201201421384549
+        },
+        {
+          "sourceField": "Risk__Justification__c",
+          "agnosticField": "guidance",
+          "rationale": "The justification text provides qualitative guidance explaining the rating value.",
+          "confidence": 0.6337750573904568
+        },
+        {
+          "sourceField": "Risk__Modelling_Notes__c",
+          "agnosticField": "factorDesc",
+          "rationale": "Modelling notes provide descriptive context for how the factor was calculated or assessed.",
+          "confidence": 0.6259856771686328
+        },
+        {
+          "sourceField": "Risk__Type_of_Risk__c",
+          "agnosticField": "choiceList",
+          "rationale": "The risk type picklist defines the categorical options available for this factor.",
+          "confidence": 0.6425842363713098
+        }
+      ],
+      "relationships": {
+        "assessment": "Risk__Risk_Assessment__c",
+        "factor": "Risk__Scoring_Category__c"
+      },
+      "writeHeuristics": {
+        "justificationField": "Risk__Justification__c",
+        "scoreField": "Risk__Value__c"
+      },
+      "confidence": 0.65266305327589
+    },
+    {
+      "sourceTableName": "XLAudit__Audit_Issue__c",
+      "targetAgnosticModel": "Issue",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Standard unique record identifier mapping.",
+          "confidence": 0.7097946463183722
+        },
+        {
+          "sourceField": "Name",
+          "agnosticField": "number",
+          "rationale": "The Audit Issue Id is the human-readable identifier for the record.",
+          "confidence": 0.718724703575112
+        },
+        {
+          "sourceField": "XLAudit__Status__c",
+          "agnosticField": "state",
+          "rationale": "The status field represents the current lifecycle state of the issue.",
+          "confidence": 0.6635345705459269
+        },
+        {
+          "sourceField": "XLAudit__Issue_Name__c",
+          "agnosticField": "desc",
+          "rationale": "The issue name provides the primary descriptive label for the record.",
+          "confidence": 0.7512921560740005
+        }
+      ],
+      "relationships": {
+        "assessment": "XLAudit__Audit__c",
+        "profile": "XLAudit__Responsible_Business_Unit__c"
+      },
+      "writeHeuristics": {},
+      "confidence": 0.7108365191283528
+    },
+    {
+      "sourceTableName": "Risk__Rating_Info__c",
+      "targetAgnosticModel": "Factor",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "Standard mapping of the record's unique identifier to the agnostic system ID.",
+          "confidence": 0.6408501533105957
+        },
+        {
+          "sourceField": "Risk__Impact_Score_Band_Name__c",
+          "agnosticField": "factorName",
+          "rationale": "The impact score band name provides the most semantically accurate name for the rating factor record.",
+          "confidence": 0.7522714505067646
+        },
+        {
+          "sourceField": "Risk__Impact__c",
+          "agnosticField": "guidance",
+          "rationale": "The impact field contains descriptive text that serves as guidance for the rating level.",
+          "confidence": 0.640947972552527
+        },
+        {
+          "sourceField": "Risk__Likelihood__c",
+          "agnosticField": "choiceList",
+          "rationale": "The likelihood field represents a categorical value suitable for the choiceList agnostic field.",
+          "confidence": 0.6474993353978283
+        }
+      ],
+      "relationships": {
+        "factor": "Risk__Likelihood_Score_Band__c"
+      },
+      "writeHeuristics": {
+        "scoreField": "Risk__Impact_Rating__c"
+      },
+      "confidence": 0.670392227941929
+    },
+    {
+      "sourceTableName": "Risk__Risk_Assessment__c",
+      "targetAgnosticModel": "AssessmentInstance",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "The unique record identifier for the assessment instance.",
+          "confidence": 0.6701862138032766
+        },
+        {
+          "sourceField": "Risk__Risk__c",
+          "agnosticField": "riskSysId",
+          "rationale": "The foreign key reference to the risk record being evaluated.",
+          "confidence": 0.6921142529574055
+        }
+      ],
+      "relationships": {
+        "risk": "Risk__Risk__c",
+        "profile": "Risk__Business_Unit__c",
+        "assessment": "Risk__Matrix_Scoring_Scheme__c"
+      },
+      "writeHeuristics": {
+        "scoreField": "Risk__Inherent_Impact_Score__c"
+      },
+      "confidence": 0.681150233380341
+    },
+    {
+      "sourceTableName": "XLAudit__Entity_Assessment__c",
+      "targetAgnosticModel": "AssessmentInstance",
+      "fieldMappings": [
+        {
+          "sourceField": "Id",
+          "agnosticField": "sysId",
+          "rationale": "The unique record identifier for the assessment instance maps to the agnostic system identifier.",
+          "confidence": 0.6701862138032766
+        }
+      ],
+      "relationships": {
+        "profile": "XLAudit__Entity__c",
+        "assessment": "XLAudit__Matrix_Scoring_Scheme__c"
+      },
+      "writeHeuristics": {
+        "scoreField": "XLAudit__Audit_Need_Score__c"
+      },
+      "confidence": 0.6701862138032766
+    }
+  ],
+  "validation": {
+    "validated": true,
+    "sampleChecks": [
+      {
+        "table": "grc__Issue__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "grc__Control_Test_Result__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "Risk__Risk_Control_Lookup__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "grc__Risk__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "grc__Responsibility_Risk__c",
+        "ok": true,
+        "notes": "Fetched 2 live sample record(s) successfully."
+      },
+      {
+        "table": "grc__Control_Test__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "grc__Issue_Item__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "Risk__Control_KCI_Lookup__c",
+        "ok": true,
+        "notes": "Fetched 0 live sample record(s) successfully."
+      },
+      {
+        "table": "Risk__Process_Control_Lookup__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "grc__Compliance_Test_Result__c",
+        "ok": true,
+        "notes": "Fetched 0 live sample record(s) successfully."
+      },
+      {
+        "table": "grc__Risk_Resource__c",
+        "ok": true,
+        "notes": "Fetched 0 live sample record(s) successfully."
+      },
+      {
+        "table": "Risk__Risk_Assessment_Rating__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "XLAudit__Audit_Issue__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "Risk__Rating_Info__c",
+        "ok": true,
+        "notes": "Fetched 0 live sample record(s) successfully."
+      },
+      {
+        "table": "Risk__Risk_Assessment__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      },
+      {
+        "table": "XLAudit__Entity_Assessment__c",
+        "ok": true,
+        "notes": "Fetched 3 live sample record(s) successfully."
+      }
+    ]
+  }
+}
