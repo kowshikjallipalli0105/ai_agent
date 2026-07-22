@@ -77,8 +77,67 @@ export default {
           status: 'online',
           platform: 'Cloudflare Worker Edge Runtime',
           service: 'GRC Agnostic AI Agent Backend',
-          time: new Date().toISOString()
+          time: new Date().toISOString(),
+          config: {
+            hasGeminiKey: !!process.env.GEMINI_API_KEY,
+            hasSnUrl: !!process.env.SERVICENOW_INSTANCE_URL,
+            hasSnUser: !!process.env.SERVICENOW_USERNAME,
+            hasSnPass: !!process.env.SERVICENOW_PASSWORD,
+            useLive: process.env.SERVICENOW_USE_LIVE,
+            snUrl: process.env.SERVICENOW_INSTANCE_URL || 'NOT SET'
+          }
         });
+      }
+
+      // ServiceNow Live Connection Test
+      if (path === '/api/test-connection' && method === 'GET') {
+        const instanceUrl = process.env.SERVICENOW_INSTANCE_URL || '';
+        const username = process.env.SERVICENOW_USERNAME || '';
+        const password = process.env.SERVICENOW_PASSWORD || '';
+        const useLive = process.env.SERVICENOW_USE_LIVE;
+
+        if (!instanceUrl || !username || !password) {
+          return jsonResponse({
+            success: false,
+            error: 'ServiceNow secrets not configured in Cloudflare',
+            missing: {
+              SERVICENOW_INSTANCE_URL: !instanceUrl,
+              SERVICENOW_USERNAME: !username,
+              SERVICENOW_PASSWORD: !password,
+              SERVICENOW_USE_LIVE: !useLive
+            }
+          });
+        }
+
+        try {
+          const base64 = btoa(`${username}:${password}`);
+          const url = `${instanceUrl.replace(/\/$/, '')}/api/now/table/sn_risk_risk?sysparm_limit=1`;
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Basic ${base64}`,
+              'Accept': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const data: any = await response.json();
+            return jsonResponse({
+              success: true,
+              message: 'ServiceNow connection successful!',
+              instanceUrl,
+              useLive,
+              riskRecordsFound: data?.result?.length || 0
+            });
+          } else {
+            return jsonResponse({
+              success: false,
+              error: `ServiceNow returned HTTP ${response.status}`,
+              hint: response.status === 401 ? 'Check username/password' : 'Check instance URL'
+            });
+          }
+        } catch (err: any) {
+          return jsonResponse({ success: false, error: err.message });
+        }
       }
 
       // Metadata endpoint
