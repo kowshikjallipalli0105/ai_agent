@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { AgnosticModelName } from './concept_catalog';
 
-const CONFIG_DIR = path.join(__dirname, '..', '..', 'generated_adapters');
+const isEdgeWorker = typeof __dirname === 'undefined';
+const CONFIG_DIR = isEdgeWorker ? '' : path.join(process.cwd(), 'generated_adapters');
 
 export interface FieldMapping {
   sourceField: string;
@@ -61,32 +62,55 @@ export interface GeneratedAdapterConfig {
 
 export function configPathFor(platformName: string): string {
   const safeName = platformName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  return path.join(CONFIG_DIR, `${safeName}.json`);
+  return isEdgeWorker ? '' : path.join(CONFIG_DIR, `${safeName}.json`);
 }
 
 export function saveAdapterConfig(config: GeneratedAdapterConfig): string {
-  fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  const filePath = configPathFor(config.platformName);
-  fs.writeFileSync(filePath, JSON.stringify(config, null, 2), 'utf-8');
-  return filePath;
+  if (isEdgeWorker || !CONFIG_DIR) return '';
+  try {
+    if (fs && typeof fs.mkdirSync === 'function') {
+      fs.mkdirSync(CONFIG_DIR, { recursive: true });
+      const filePath = configPathFor(config.platformName);
+      fs.writeFileSync(filePath, JSON.stringify(config, null, 2), 'utf-8');
+      return filePath;
+    }
+  } catch (e: any) {
+    console.warn(`[GeneratedAdapterConfig] Failed to save config: ${e.message}`);
+  }
+  return '';
 }
 
 export function loadAdapterConfig(platformName: string): GeneratedAdapterConfig | null {
+  if (isEdgeWorker || !CONFIG_DIR) return null;
   const filePath = configPathFor(platformName);
-  if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as GeneratedAdapterConfig;
+  try {
+    if (!fs || typeof fs.existsSync !== 'function' || !fs.existsSync(filePath)) return null;
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as GeneratedAdapterConfig;
+  } catch {
+    return null;
+  }
 }
 
 export function loadAdapterConfigFromPath(filePath: string): GeneratedAdapterConfig | null {
-  if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as GeneratedAdapterConfig;
+  if (isEdgeWorker || !filePath) return null;
+  try {
+    if (!fs || typeof fs.existsSync !== 'function' || !fs.existsSync(filePath)) return null;
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as GeneratedAdapterConfig;
+  } catch {
+    return null;
+  }
 }
 
 export function listAllAdapterConfigs(): GeneratedAdapterConfig[] {
-  if (!fs.existsSync(CONFIG_DIR)) return [];
-  return fs.readdirSync(CONFIG_DIR)
-    .filter(f => f.endsWith('.json'))
-    .map(f => JSON.parse(fs.readFileSync(path.join(CONFIG_DIR, f), 'utf-8')) as GeneratedAdapterConfig);
+  if (isEdgeWorker || !CONFIG_DIR) return [];
+  try {
+    if (!fs || typeof fs.existsSync !== 'function' || !fs.existsSync(CONFIG_DIR)) return [];
+    return fs.readdirSync(CONFIG_DIR)
+      .filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(CONFIG_DIR, f), 'utf-8')) as GeneratedAdapterConfig);
+  } catch {
+    return [];
+  }
 }
 
 export function findTable(config: GeneratedAdapterConfig, model: AgnosticModelName): TableMapping | undefined {

@@ -37,16 +37,18 @@ export interface Trace {
   spans: Span[];
 }
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
-const TRACES_PATH = path.join(DATA_DIR, 'traces.jsonl');
+const isEdgeWorker = typeof __dirname === 'undefined';
+const DATA_DIR = isEdgeWorker ? '' : path.join(process.cwd(), 'data');
+const TRACES_PATH = isEdgeWorker ? '' : path.join(DATA_DIR, 'traces.jsonl');
 const RING_SIZE = 200;
 
 const storage = new AsyncLocalStorage<Trace>();
 const ring: Trace[] = [];
 
 function loadRecentFromDisk(): void {
+  if (isEdgeWorker || !TRACES_PATH) return;
   try {
-    if (!fs.existsSync(TRACES_PATH)) return;
+    if (!fs || typeof fs.existsSync !== 'function' || !fs.existsSync(TRACES_PATH)) return;
     const lines = fs.readFileSync(TRACES_PATH, 'utf-8').trim().split('\n');
     for (const line of lines.slice(-RING_SIZE)) {
       try { ring.push(JSON.parse(line) as Trace); } catch { /* skip corrupt line */ }
@@ -58,7 +60,9 @@ function loadRecentFromDisk(): void {
 loadRecentFromDisk();
 
 function persist(trace: Trace): void {
+  if (isEdgeWorker || !TRACES_PATH) return;
   try {
+    if (!fs || typeof fs.mkdirSync !== 'function') return;
     fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.appendFileSync(TRACES_PATH, JSON.stringify(trace) + '\n', 'utf-8');
   } catch (e: any) {

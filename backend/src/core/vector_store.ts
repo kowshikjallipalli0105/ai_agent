@@ -5,8 +5,9 @@ import { BaseEmbeddingsClient, cosineSimilarity } from '../llm/embeddings_client
 import { CONCEPT_CATALOG, conceptTableEmbeddingText, conceptFieldEmbeddingText, AgnosticModelName } from './concept_catalog';
 import { GOLD_STANDARD_TABLES, goldStandardEmbeddingText } from './gold_standard_catalog';
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
-const STORE_PATH = path.join(DATA_DIR, 'vector_cache.json');
+const isEdgeWorker = typeof __dirname === 'undefined';
+const DATA_DIR = isEdgeWorker ? '' : path.join(process.cwd(), 'data');
+const STORE_PATH = isEdgeWorker ? '' : path.join(DATA_DIR, 'vector_cache.json');
 
 export interface ConceptVectorItem {
   model: AgnosticModelName;
@@ -45,8 +46,9 @@ function emptyStore(): VectorStoreShape {
 }
 
 function loadStore(): VectorStoreShape {
+  if (isEdgeWorker || !STORE_PATH) return emptyStore();
   try {
-    if (fs.existsSync(STORE_PATH)) {
+    if (fs && typeof fs.existsSync === 'function' && fs.existsSync(STORE_PATH)) {
       const raw = fs.readFileSync(STORE_PATH, 'utf-8');
       return JSON.parse(raw) as VectorStoreShape;
     }
@@ -57,8 +59,15 @@ function loadStore(): VectorStoreShape {
 }
 
 function saveStore(store: VectorStoreShape): void {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
+  if (isEdgeWorker || !DATA_DIR) return;
+  try {
+    if (fs && typeof fs.mkdirSync === 'function') {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
+    }
+  } catch (e: any) {
+    console.warn(`[VectorStore] Failed to persist cache: ${e.message}`);
+  }
 }
 
 function computeCatalogHash(): string {
