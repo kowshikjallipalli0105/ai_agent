@@ -858,9 +858,20 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
       const liveErrors: string[] = [];
 
       for (const ctrl of matchedControls) {
-        // PRIMARY: Update sn_compliance_control.risk = riskSysId
-        // This is the confirmed write-back approach for this PDI
-        // (sn_risk_m2m_risk_control does not exist on this instance)
+        // 1. Try posting to sn_risk_m2m_risk_control (Risk Workspace Controls tab related list)
+        try {
+          await this.postRecord('sn_risk_m2m_risk_control', {
+            risk: riskSysId,
+            control: ctrl.sysId,
+            sn_risk: riskSysId,
+            sn_control: ctrl.sysId
+          });
+          console.log(`[ServiceNow LIVE UPDATE] Created m2m row in sn_risk_m2m_risk_control: [${ctrl.sysId}] -> [${riskSysId}]`);
+        } catch (eM2m: any) {
+          console.warn(`[ServiceNow LIVE UPDATE] m2m table write notice: ${eM2m.message}`);
+        }
+
+        // 2. PRIMARY: Update sn_compliance_control.risk = riskSysId
         try {
           await this.putRecord('sn_compliance_control', ctrl.sysId, {
             risk: riskSysId
