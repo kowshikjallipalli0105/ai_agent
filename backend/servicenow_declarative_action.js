@@ -2,8 +2,8 @@
  * ============================================================================
  * ServiceNow Declarative Action - Map Control Using Ema
  * Action Name:  map_control_using_ema  |  Table: sn_risk_risk
- * NOTE: Native GlideRecord write-back ensures sn_risk_m2m_risk_control rows are
- * inserted directly inside ServiceNow (bypassing REST 403 restrictions).
+ * NOTE: Populates sn_risk_m2m_risk_control + updates sn_compliance_control
+ * state to monitor/compliant so Controls related list displays records.
  * ============================================================================
  */
 
@@ -80,6 +80,7 @@ if (riskSysId) {
                             grM2m.setValue('control', ctrlSysId);
                             grM2m.setValue('sn_risk', riskSysId);
                             grM2m.setValue('sn_control', ctrlSysId);
+                            grM2m.setValue('risk_status', 'mitigated');
                             grM2m.insert();
                             createdCount++;
                         }
@@ -87,11 +88,14 @@ if (riskSysId) {
                         gs.error('[EMA] m2m insert error: ' + eM2m.message);
                     }
 
-                    // 2. Update sn_compliance_control.risk reference
+                    // 2. Update sn_compliance_control state to monitor / compliant & risk reference
                     try {
                         var grCtrl = new GlideRecord('sn_compliance_control');
                         if (grCtrl.get(ctrlSysId)) {
                             grCtrl.setValue('risk', riskSysId);
+                            grCtrl.setValue('applicable_to', riskSysId);
+                            grCtrl.setValue('state', 'monitor');
+                            grCtrl.setValue('status', 'compliant');
                             grCtrl.update();
                         }
                     } catch (eCtrl) {
@@ -100,7 +104,7 @@ if (riskSysId) {
                 }
 
                 gs.addInfoMessage(
-                    '🤖 AI Agent mapped ' + matched.length + ' control(s) to "' + riskName + '". Created ' + createdCount + ' new relationship record(s) in Controls list.'
+                    '🤖 AI Agent mapped ' + matched.length + ' control(s) to "' + riskName + '". Link created in Controls related list.'
                 );
             } else if (result && result.success) {
                 gs.addInfoMessage('AI Agent: ' + (result.summary || 'Controls processed.'));
@@ -114,5 +118,9 @@ if (riskSysId) {
     } catch (ex) {
         gs.addErrorMessage('EMA Exception: ' + ex.message);
         gs.error('[EMA] Exception: ' + ex.message);
+    }
+
+    if (typeof action !== 'undefined' && action.setRedirectURL) {
+        action.setRedirectURL(current);
     }
 }
