@@ -1,4 +1,4 @@
-name = "aiagent"
+﻿name = "aiagent"
 main = "src/worker.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
@@ -6,12 +6,16 @@ compatibility_flags = ["nodejs_compat"]
 # Node.js compatibility settings for Cloudflare Workers
 [vars]
 ENVIRONMENT = "production"
-DEFAULT_PLATFORM = "servicenow"
 SERVICENOW_USE_LIVE = "true"
 
-# Note: Set sensitive secrets via 'npx wrangler secret put KEY_NAME' or in .dev.vars for local testing:
-# GEMINI_API_KEY
-# SERVICENOW_INSTANCE_URL
-# SERVICENOW_USERNAME
-# SERVICENOW_PASSWORD
-# SERVICENOW_USE_LIVE
+# Sensitive secrets are managed in the Cloudflare Dashboard:
+# Workers & Pages -> aiagent -> Settings -> Variables and Secrets
+# Set the following there (NOT here):
+#   GEMINI_API_KEY
+#   SERVICENOW_INSTANCE_URL
+#   SERVICENOW_USERNAME
+#   SERVICENOW_PASSWORD
+#   SALESFORCE_USE_LIVE
+#   SALESFORCE_INSTANCE_URL
+#   SALESFORCE_CLIENT_ID
+#   SALESFORCE_CLIENT_SECRET
