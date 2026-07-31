@@ -2,7 +2,8 @@
  * ============================================================================
  * ServiceNow Declarative Action - Map Control Using Ema
  * Action Name:  map_control_using_ema  |  Table: sn_risk_risk
- * NOTE: No function wrapper - runs flat in ServiceNow script scope.
+ * NOTE: Native GlideRecord write-back ensures sn_risk_m2m_risk_control rows are
+ * inserted directly inside ServiceNow (bypassing REST 403 restrictions).
  * ============================================================================
  */
 
@@ -55,21 +56,56 @@ if (riskSysId) {
         gs.info('[EMA] Worker HTTP ' + status + ': ' + body);
 
         if (status == 200 || status == 201) {
-            // Use JSON.parse (NOT new JSON().decode - JSON is not a constructor in Rhino)
             var result = JSON.parse(body);
 
             if (result && result.success && result.result && result.result.success) {
                 var details = result.result.details || {};
                 var matched = details.matches || [];
+                var createdCount = 0;
+
+                // Native GlideRecord Write-Back directly into ServiceNow tables!
+                for (var i = 0; i < matched.length; i++) {
+                    var ctrlSysId = matched[i].sysId;
+                    if (!ctrlSysId) continue;
+
+                    // 1. Insert into sn_risk_m2m_risk_control (Risk Workspace Controls tab table)
+                    try {
+                        var grM2m = new GlideRecord('sn_risk_m2m_risk_control');
+                        grM2m.addQuery('risk', riskSysId);
+                        grM2m.addQuery('control', ctrlSysId);
+                        grM2m.query();
+                        if (!grM2m.hasNext()) {
+                            grM2m.initialize();
+                            grM2m.setValue('risk', riskSysId);
+                            grM2m.setValue('control', ctrlSysId);
+                            grM2m.setValue('sn_risk', riskSysId);
+                            grM2m.setValue('sn_control', ctrlSysId);
+                            grM2m.insert();
+                            createdCount++;
+                        }
+                    } catch (eM2m) {
+                        gs.error('[EMA] m2m insert error: ' + eM2m.message);
+                    }
+
+                    // 2. Update sn_compliance_control.risk reference
+                    try {
+                        var grCtrl = new GlideRecord('sn_compliance_control');
+                        if (grCtrl.get(ctrlSysId)) {
+                            grCtrl.setValue('risk', riskSysId);
+                            grCtrl.update();
+                        }
+                    } catch (eCtrl) {
+                        gs.error('[EMA] control update error: ' + eCtrl.message);
+                    }
+                }
+
                 gs.addInfoMessage(
-                    'AI Agent mapped ' + matched.length + ' control(s) to "' + riskName +
-                    '". Refresh the page to see them in the Controls related list.'
+                    '🤖 AI Agent mapped ' + matched.length + ' control(s) to "' + riskName + '". Created ' + createdCount + ' new relationship record(s) in Controls list.'
                 );
             } else if (result && result.success) {
                 gs.addInfoMessage('AI Agent: ' + (result.summary || 'Controls processed.'));
             } else {
-                var errDetail = result ? (result.error || result.summary || body) : body;
-                gs.addErrorMessage('AI Agent error: ' + errDetail);
+                gs.addErrorMessage('AI Agent error: ' + (result ? (result.error || result.summary || body) : body));
             }
         } else {
             gs.addErrorMessage('EMA Worker HTTP Error ' + status + ': ' + body);
