@@ -854,70 +854,58 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
     recommendations: string
   ): Promise<void> {
     if (this.useLive) {
-      let createdCount = 0;
+      let successCount = 0;
+      const liveErrors: string[] = [];
+
       for (const ctrl of matchedControls) {
-        // 1. Post to sn_risk_m2m_risk_control with all possible field names
-        try {
-          await this.postRecord('sn_risk_m2m_risk_control', {
-            risk: riskSysId,
-            control: ctrl.sysId,
-            sn_risk_risk: riskSysId,
-            sn_compliance_control: ctrl.sysId,
-            sn_risk: riskSysId,
-            sn_control: ctrl.sysId
-          });
-          createdCount++;
-        } catch (e1: any) {
-          console.warn(`[ServiceNow LIVE UPDATE] sn_risk_m2m_risk_control: ${e1.message}`);
-        }
-
-        // 2. Post to sn_compliance_m2m_risk_control
-        try {
-          await this.postRecord('sn_compliance_m2m_risk_control', {
-            risk: riskSysId,
-            control: ctrl.sysId,
-            sn_risk_risk: riskSysId,
-            sn_compliance_control: ctrl.sysId
-          });
-          createdCount++;
-        } catch (e2: any) {
-          console.warn(`[ServiceNow LIVE UPDATE] sn_compliance_m2m_risk_control: ${e2.message}`);
-        }
-
-        // 3. Update the Control record directly with risk reference
+        // PRIMARY: Update sn_compliance_control.risk = riskSysId
+        // This is the confirmed write-back approach for this PDI
+        // (sn_risk_m2m_risk_control does not exist on this instance)
         try {
           await this.putRecord('sn_compliance_control', ctrl.sysId, {
-            risk: riskSysId,
-            sn_risk_risk: riskSysId,
-            applicable_to: riskSysId
+            risk: riskSysId
           });
-          createdCount++;
-        } catch (e3: any) {
-          console.warn(`[ServiceNow LIVE UPDATE] sn_compliance_control direct link: ${e3.message}`);
+          successCount++;
+          console.log(`[ServiceNow LIVE UPDATE] Linked control [${ctrl.sysId}] -> risk [${riskSysId}] via sn_compliance_control.risk`);
+        } catch (e1: any) {
+          const errMsg = `Control ${ctrl.sysId}: ${e1.message}`;
+          liveErrors.push(errMsg);
+          console.warn(`[ServiceNow LIVE UPDATE] sn_compliance_control.risk update failed: ${errMsg}`);
         }
       }
 
-      // 4. Update Risk record work_notes & comments with AI Agent mapping checklist
+      // Update the Risk record:
+      // - set .control = first matched control sys_id (shows in Controls field on form)
+      // - set .work_notes with AI audit log
       try {
         const auditText = [
-          `🤖 [WissdaSense AI Agent] Risk-Control Mapping Executed`,
+          `[WissdaSense AI Agent] Risk-Control Mapping Executed`,
           `Mapped Controls (${matchedControls.length}):`,
-          ...matchedControls.map(c => ` • ✅ ${c.sysId}: ${c.reason}`),
+          ...matchedControls.map(c => ` - ${c.sysId}: ${c.reason}`),
           `AI Justification: ${justification}`,
           `Recommendations: ${recommendations || 'N/A'}`
         ].join('\n');
 
-        await this.putRecord('sn_risk_risk', riskSysId, {
+        const riskUpdatePayload: any = {
           work_notes: auditText,
-          comments: auditText
-        });
-      } catch (e4: any) {
-        console.warn(`[ServiceNow LIVE UPDATE] Risk work_notes: ${e4.message}`);
+          u_ai_agent_notes: auditText
+        };
+
+        // Set the control reference field to the first matched control
+        if (matchedControls.length > 0) {
+          riskUpdatePayload.control = matchedControls[0].sysId;
+        }
+
+        await this.putRecord('sn_risk_risk', riskSysId, riskUpdatePayload);
+        console.log(`[ServiceNow LIVE UPDATE] Risk record [${riskSysId}] updated with control ref + work_notes.`);
+      } catch (e2: any) {
+        console.warn(`[ServiceNow LIVE UPDATE] Risk record update failed: ${e2.message}`);
       }
 
-      console.log(`[ServiceNow LIVE UPDATE] Successfully executed multi-table write-back for ${matchedControls.length} controls.`);
+      console.log(`[ServiceNow LIVE UPDATE] Write-back complete: ${successCount}/${matchedControls.length} controls linked. Errors: ${liveErrors.length}`);
       return;
     }
+
 
     // Simulate inserting relationships into sn_risk_m2m_risk_control
     matchedControls.forEach(ctrl => {
