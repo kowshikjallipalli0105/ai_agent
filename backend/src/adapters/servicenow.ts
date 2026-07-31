@@ -383,54 +383,8 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
   async getControlsForEntity(profileSysId: string): Promise<Control[]> {
     if (this.useLive) {
       try {
-        // 1. Try direct profile match first
-        let results = await this.queryTable<any>('sn_compliance_control', { 
-          sysparm_query: profileSysId ? `profile=${profileSysId}` : '',
-          sysparm_limit: '100'
-        });
-
-        // 2. If no results, try 'applicable_to' field
-        if (results.length === 0 && profileSysId) {
-          results = await this.queryTable<any>('sn_compliance_control', {
-            sysparm_query: `applicable_to=${profileSysId}`,
-            sysparm_limit: '100'
-          });
-        }
-
-        // 3. If still nothing, fetch all controls without filter
-        if (results.length === 0) {
-          results = await this.queryTable<any>('sn_compliance_control', {
-            sysparm_limit: '50'
-          });
-        }
-
-        // 4. If table is empty on PDI, auto-create controls on PDI so mapping always succeeds!
-        if (results.length === 0) {
-          console.warn(`[ServiceNowAdapter] Controls table empty on PDI. Creating standard controls...`);
-          const defaultControlsToCreate = [
-            { name: 'Database Password Rotation & Access Control', description: 'Enforce key rotation and access permissions.', category: 'Access Control' },
-            { name: 'Multi-Factor Authentication (MFA)', description: 'Mandatory MFA for all administrative accesses.', category: 'Access Control' },
-            { name: 'Daily Backup & Encryption at Rest', description: 'Automated encrypted backup schedules and integrity verification.', category: 'Backup & Recovery' }
-          ];
-
-          for (const item of defaultControlsToCreate) {
-            try {
-              await this.postRecord('sn_compliance_control', {
-                name: item.name,
-                description: item.description,
-                category: item.category,
-                active: true,
-                ...(profileSysId ? { profile: profileSysId } : {})
-              });
-            } catch (err: any) {
-              console.warn(`[ServiceNowAdapter] Could not post new control to PDI: ${err.message}`);
-            }
-          }
-
-          // Fetch freshly created controls
-          results = await this.queryTable<any>('sn_compliance_control', { sysparm_limit: '50' });
-        }
-
+        let results = await this.queryTable<any>('sn_compliance_control', { sysparm_limit: '100' });
+        
         if (results.length > 0) {
           return results.map((c: any) => ({
             sysId: getValue(c.sys_id),
@@ -446,12 +400,7 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
       }
     }
 
-    const filteredMock = sn_compliance_control
-      .filter(c => (!profileSysId || c.profile === profileSysId) && c.active);
-
-    const pool = filteredMock.length > 0 ? filteredMock : sn_compliance_control;
-
-    return pool.map(c => ({
+    return sn_compliance_control.map(c => ({
       sysId: c.sys_id,
       name: c.name,
       description: c.description,
