@@ -67,4 +67,9 @@
         gs.addErrorMessage('❌ <b>Declarative Action Exception:</b> ' + ex.message);
         gs.error('[Declarative Action AI Agent Error] ' + ex.message);
     }
+
+    // Refresh workspace record view so the Controls related list updates immediately
+    if (typeof action !== 'undefined' && action.setRedirectURL) {
+        action.setRedirectURL(record);
+    }
 })(inputs, outputs);

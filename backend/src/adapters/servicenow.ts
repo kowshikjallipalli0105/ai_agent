@@ -828,18 +828,30 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
     recommendations: string
   ): Promise<void> {
     if (this.useLive) {
-      try {
-        for (const ctrl of matchedControls) {
-          await this.postRecord('sn_risk_m2m_risk_control', {
-            sn_risk_risk: riskSysId,
-            sn_compliance_control: ctrl.sysId
-          });
+      let createdCount = 0;
+      for (const ctrl of matchedControls) {
+        // Provide all common ServiceNow reference field name aliases so Table API matches schema
+        const payload: Record<string, string> = {
+          risk: riskSysId,
+          control: ctrl.sysId,
+          sn_risk_risk: riskSysId,
+          sn_compliance_control: ctrl.sysId
+        };
+
+        try {
+          await this.postRecord('sn_risk_m2m_risk_control', payload);
+          createdCount++;
+        } catch (e1: any) {
+          try {
+            await this.postRecord('sn_compliance_m2m_risk_control', payload);
+            createdCount++;
+          } catch (e2: any) {
+            console.warn(`[ServiceNow LIVE UPDATE] Could not create link for control ${ctrl.sysId}: ${e2.message}`);
+          }
         }
-        console.log(`[ServiceNow LIVE UPDATE] Created ${matchedControls.length} risk-control links in sn_risk_m2m_risk_control table.`);
-        return;
-      } catch (e: any) {
-        console.warn(`[ServiceNow LIVE UPDATE] Failed to write risk control mappings to PDI, updating mock database instead. Error: ${e.message}`);
       }
+      console.log(`[ServiceNow LIVE UPDATE] Successfully created ${createdCount} risk-control links in ServiceNow.`);
+      return;
     }
 
     // Simulate inserting relationships into sn_risk_m2m_risk_control
@@ -854,7 +866,6 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
     });
 
     console.log(`[ServiceNow DB UPDATE] Created ${matchedControls.length} rows in [sn_risk_m2m_risk_control] linking risk [${riskSysId}]`);
-    console.log(`[ServiceNow DB UPDATE] Table [sn_risk_risk] row [${riskSysId}] -> u_ai_recommendation: [HTML summary written]`);
   }
 
   async writeFailure(rowSysId: string, reason: string): Promise<void> {
