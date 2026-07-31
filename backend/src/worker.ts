@@ -162,6 +162,12 @@ export default {
         const agent = body.agent || body.agentType || 'risk-control-mapping';
         const platform = body.platform || 'servicenow';
 
+        // Dynamically override instance URL from payload or header if provided by ServiceNow
+        const customInstanceUrl = body.instanceUrl || body.instance_url || request.headers.get('X-ServiceNow-Instance');
+        if (customInstanceUrl) {
+          process.env.SERVICENOW_INSTANCE_URL = customInstanceUrl.endsWith('/') ? customInstanceUrl : customInstanceUrl + '/';
+        }
+
         if (!targetId) {
           return jsonResponse({
             success: false,

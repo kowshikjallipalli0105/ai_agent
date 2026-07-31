@@ -25,12 +25,14 @@
 
     gs.info('[Declarative Action AI Agent] Triggering Cloudflare Worker for: ' + riskName + ' (' + riskSysId + ')');
 
-    // 3. Build AI Agent Payload
+    // 3. Build AI Agent Payload (includes live instance URL so Cloudflare connects to your active PDI)
+    var instanceUrl = gs.getProperty('glide.servlet.uri') || 'https://dev192667.service-now.com/';
     var payload = {
         "platform": "servicenow",
         "agent": "risk-control-mapping",
         "targetId": riskSysId,
         "riskSysId": riskSysId,
+        "instanceUrl": instanceUrl,
         "source": "Next Experience Workspace Declarative Action",
         "triggeredBy": gs.getUserName()
     };
