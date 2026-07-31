@@ -30,27 +30,27 @@ We also built a **Schema Onboarding / Metadata Parsing Agent** to automatically 
 
 ## Code Files Created
 
-All source files are available in your workspace under [e:/ai agent](file:///e:/ai%20agent/):
+All source files are available in your workspace under [d:/ai_agent](file:///d:/ai_agent/):
 
-1. **Core Validation Schemas**: [models.ts](file:///e:/ai%20agent/backend/src/core/models.ts)  
+1. **Core Validation Schemas**: [models.ts](file:///d:/ai_agent/backend/src/core/models.ts)  
    Declares platform-agnostic GRC structures using Zod. Translates platform data types to a standard contract.
-2. **Unified Adapter Contract**: [base.ts](file:///e:/ai%20agent/backend/src/adapters/base.ts)  
+2. **Unified Adapter Contract**: [base.ts](file:///d:/ai_agent/backend/src/adapters/base.ts)  
    Defines the abstract interface for all platform reads and write-backs.
-3. **ServiceNow Adapter**: [servicenow.ts](file:///e:/ai%20agent/backend/src/adapters/servicenow.ts)  
+3. **ServiceNow Adapter**: [servicenow.ts](file:///d:/ai_agent/backend/src/adapters/servicenow.ts)  
    Translates raw GlideRecord tables (`sn_risk_risk`, `sn_audit_control_test`, `sn_grc_issue`) into agnostic structures.
-4. **Salesforce Adapter**: [salesforce.ts](file:///e:/ai%20agent/backend/src/adapters/salesforce.ts)  
+4. **Salesforce Adapter**: [salesforce.ts](file:///d:/ai_agent/backend/src/adapters/salesforce.ts)  
    Translates Salesforce custom objects (`Risk__c`, `Control__c`, `Assessment_Factor__c`) into the same agnostic models.
-5. **Gemini LLM Interface**: [llm_client.ts](file:///e:/ai%20agent/backend/src/llm/llm_client.ts)  
+5. **Gemini LLM Interface**: [llm_client.ts](file:///d:/ai_agent/backend/src/llm/llm_client.ts)  
    Leverages Gemini's structured output capability (`response_mime_type: "application/json"`) to guarantee output formatting, with an automatic client-side simulator.
-6. **Reasoning Agents**: [agents.ts](file:///e:/ai%20agent/backend/src/core/agents.ts)  
+6. **Reasoning Agents**: [agents.ts](file:///d:/ai_agent/backend/src/core/agents.ts)  
    Contains the agent algorithms:
    - **Risk-Control Mapping**: Scans risks and profiles, matches controls, flags gaps, and suggests modifications.
    - **Inherent Risk Assessment**: Cross-references active entity issues and prompts LLM to score factors based on target rubrics.
    - **Control Effectiveness**: Performs batch audits. Includes a **deterministic fingerprinting cache** that checks if audit evidence has changed. If unchanged, it carries forward prior assessments instantly, eliminating LLM API costs.
    - **Schema Discovery Agent**: Our parsing node that scans new system catalogs to construct metadata configurations.
-7. **Express Server API**: [app.ts](file:///e:/ai%20agent/backend/src/app.ts)  
+7. **Express Server API**: [app.ts](file:///d:/ai_agent/backend/src/app.ts)  
    Exposes HTTP endpoints for execution runs and onboarding uploads.
-8. **Demonstration Dashboard**: [index.html](file:///e:/ai%20agent/frontend/index.html), [style.css](file:///e:/ai%20agent/frontend/style.css), [app.js](file:///e:/ai%20agent/frontend/app.js)  
+8. **Demonstration Dashboard**: [index.html](file:///d:/ai_agent/frontend/index.html), [style.css](file:///d:/ai_agent/frontend/style.css), [app.js](file:///d:/ai_agent/frontend/app.js)  
    A beautiful, high-fidelity dark glassmorphic dashboard showcasing live agent executions, step-by-step console logs, database write-backs, and the metadata parsing portal.
 
 ---
@@ -58,7 +58,7 @@ All source files are available in your workspace under [e:/ai agent](file:///e:/
 ## Step-by-Step Execution Verification
 
 ### 1. Web Dashboard View
-Open the [index.html](file:///e:/ai%20agent/frontend/index.html) file directly in your browser. The dashboard automatically starts in **Standalone Simulation Mode** if it cannot connect to the backend server, allowing you to run the complete pipeline inside the client.
+Open the [index.html](file:///d:/ai_agent/frontend/index.html) file directly in your browser. The dashboard automatically starts in **Standalone Simulation Mode** if it cannot connect to the backend server, allowing you to run the complete pipeline inside the client.
 
 - **Sandbox Tab**: Select a platform (ServiceNow or Salesforce) and run any agent. You can view the raw database records, the translated agnostic structures, the generated LLM prompts, and the final write-back logs side-by-side.
 - **Schema Onboarding Tab**: Paste a raw GRC database configuration and watch the parser output mapping instructions.
@@ -68,7 +68,7 @@ To run the live TypeScript server and connect it to the Google Gemini API:
 
 1. Navigate to the backend folder:
    ```bash
-   cd "e:\ai agent\backend"
+   cd "d:\ai_agent\backend"
    ```
 2. Create a `.env` file containing your Gemini API key:
    ```env

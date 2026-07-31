@@ -4,7 +4,7 @@
    and provides a complete client-side GRC simulation fallback.
    ============================================================================ */
 
-const API_BASE = 'http://localhost:3000/api';
+let API_BASE = 'https://aiagent.kowshik0105.workers.dev/api';
 let isStandaloneMode = true;
 
 // Dynamic Data Store for simulation fallback
@@ -101,22 +101,32 @@ async function checkBackendConnection() {
   const statusDot = document.querySelector('.status-dot');
   const statusText = document.getElementById('connection-status');
   
-  try {
-    const res = await fetch(`${API_BASE}/platforms`);
-    if (res.ok) {
-      isStandaloneMode = false;
-      statusDot.className = 'status-dot green';
-      statusText.innerText = 'Server Connected (Live Mode)';
-      loadDropdownsLive();
-    } else {
-      throw new Error();
+  const endpointsToTry = [
+    'https://aiagent.kowshik0105.workers.dev/api',
+    'http://localhost:3000/api'
+  ];
+
+  for (const endpoint of endpointsToTry) {
+    try {
+      const res = await fetch(`${endpoint}/platforms`);
+      if (res.ok) {
+        API_BASE = endpoint;
+        isStandaloneMode = false;
+        statusDot.className = 'status-dot green';
+        const isCloudflare = endpoint.includes('workers.dev');
+        statusText.innerText = isCloudflare ? 'Cloudflare Edge (Live ServiceNow Connected)' : 'Local Express Server (Live Mode)';
+        loadDropdownsLive();
+        return;
+      }
+    } catch (e) {
+      // Continue to next endpoint fallback
     }
-  } catch (e) {
-    isStandaloneMode = true;
-    statusDot.className = 'status-dot orange';
-    statusText.innerText = 'Standalone Simulation Mode (Offline)';
-    loadDropdownsMock();
   }
+
+  isStandaloneMode = true;
+  statusDot.className = 'status-dot orange';
+  statusText.innerText = 'Standalone Simulation Mode (Offline)';
+  loadDropdownsMock();
 }
 
 // ============================================================================

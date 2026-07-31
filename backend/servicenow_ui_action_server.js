@@ -17,7 +17,7 @@
 
 (function executeUIAction(current, previous) {
     // 1. Configure Cloudflare Worker Endpoint
-    var WORKER_URL = 'https://grc-ai-agent.your-subdomain.workers.dev/api/servicenow/trigger-agent';
+    var WORKER_URL = 'https://aiagent.kowshik0105.workers.dev/api/servicenow/trigger-agent';
     
     // 2. Prepare payload from current ServiceNow GlideRecord
     var riskSysId = current.getValue('sys_id');

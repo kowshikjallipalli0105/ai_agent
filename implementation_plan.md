@@ -23,11 +23,11 @@ This plan outlines the steps required to transition the ServiceNow Adapter from 
 
 ## Proposed Changes
 
-We will modify the following components in the `e:/ai agent` workspace:
+We will modify the following components in the `d:/ai_agent` workspace:
 
 ### 1. Backend Configuration
 
-#### [MODIFY] [servicenow.ts](file:///e:/ai%20agent/backend/src/adapters/servicenow.ts)
+#### [MODIFY] [servicenow.ts](file:///d:/ai_agent/backend/src/adapters/servicenow.ts)
 - Modify the `ServiceNowAdapter` class constructor to read:
   - `SERVICENOW_INSTANCE_URL`
   - `SERVICENOW_USERNAME`
@@ -37,13 +37,13 @@ We will modify the following components in the `e:/ai agent` workspace:
 - Update all adapter read methods (`getRisk`, `getControlsForEntity`, `getAssessmentInstance`, `getControlEvidence`) to fetch data dynamically from ServiceNow using HTTP Basic Auth when `SERVICENOW_USE_LIVE` is enabled.
 - Handle fallback smoothly: if the connection fails or credentials are not configured, it should log a warning and return the mock simulation records.
 
-#### [MODIFY] [app.ts](file:///e:/ai%20agent/backend/src/app.ts)
+#### [MODIFY] [app.ts](file:///d:/ai_agent/backend/src/app.ts)
 - Expose a new route `GET /api/platforms/servicenow/risks` to fetch and list all available risk records from the live ServiceNow instance (table `sn_risk_risk`).
 - Update `GET /api/platforms` to return live-fetched targets if ServiceNow is connected in Live Mode.
 
 ### 2. Frontend Interface
 
-#### [MODIFY] [app.js](file:///e:/ai%20agent/frontend/app.js)
+#### [MODIFY] [app.js](file:///d:/ai_agent/frontend/app.js)
 - Enhance the `updateTargets` method to perform an asynchronous fetch to `GET /api/platforms/servicenow/risks` when "ServiceNow" is selected as the platform and the server is connected.
 - Update the dropdown to display live fetched risks alongside their descriptions.
 
@@ -52,8 +52,8 @@ We will modify the following components in the `e:/ai agent` workspace:
 ## Verification Plan
 
 ### Manual Verification
-1. Configure credentials in `e:/ai agent/backend/.env` with your ServiceNow PDI details.
+1. Configure credentials in `d:/ai_agent/backend/.env` with your ServiceNow PDI details.
 2. Start the Express server with `npm run dev`.
-3. Open [index.html](file:///e:/ai%20agent/frontend/index.html).
+3. Open [index.html](file:///d:/ai_agent/frontend/index.html).
 4. Verify that the platform selector displays live risks fetched from your ServiceNow instance.
 5. Execute the **Risk-Control Mapping Agent** or **Control Effectiveness Agent** and inspect the step-by-step logs to confirm the REST API GET/POST payloads sent to ServiceNow.
