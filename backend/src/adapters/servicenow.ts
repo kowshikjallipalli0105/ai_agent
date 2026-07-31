@@ -446,16 +446,19 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
       }
     }
 
-    return sn_compliance_control
-      .filter(c => (!profileSysId || c.profile === profileSysId) && c.active)
-      .map(c => ({
-        sysId: c.sys_id,
-        name: c.name,
-        description: c.description,
-        category: c.category || 'General',
-        profileSysId: c.profile,
-        active: c.active
-      }));
+    const filteredMock = sn_compliance_control
+      .filter(c => (!profileSysId || c.profile === profileSysId) && c.active);
+
+    const pool = filteredMock.length > 0 ? filteredMock : sn_compliance_control;
+
+    return pool.map(c => ({
+      sysId: c.sys_id,
+      name: c.name,
+      description: c.description,
+      category: c.category || 'General',
+      profileSysId: c.profile,
+      active: c.active
+    }));
   }
 
   async getAssessmentInstance(instanceSysId: string): Promise<{ sysId: string, riskSysId: string } | null> {
