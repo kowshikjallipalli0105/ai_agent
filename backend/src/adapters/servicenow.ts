@@ -119,6 +119,13 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
     return 'Entity';
   }
 
+  /** Allow the worker to inject credentials at runtime (e.g. from payload or headers) */
+  setLiveCredentials(instanceUrl: string, username: string, password: string): void {
+    this.instanceUrl = instanceUrl.endsWith('/') ? instanceUrl : instanceUrl + '/';
+    this.authHeader = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+    this.useLive = true;
+  }
+
   getPlatformName(): string {
     return 'servicenow';
   }

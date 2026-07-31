@@ -1,44 +1,45 @@
-/**
+﻿/**
  * ============================================================================
  * ServiceNow Declarative Action (UX Form Action for Next Experience Workspaces)
  * ============================================================================
- * Location: Declarative Actions -> Form Actions (sys_declarative_action_assignment)
- * Table: Risk [sn_risk_risk] (or Assessment Instance [sn_risk_advanced_risk_assessment_instance])
  * Action Label: Map Control Using Ema
  * Action Name: map_control_using_ema
- * Implemented As: Script (or UX Action Payload / Server Script)
- * Form Location: Form Header
+ * Table: Risk [sn_risk_risk]
  * 
- * Cloudflare Worker Live Endpoint:
- * https://aiagent.kowshik0105.workers.dev/api/servicenow/trigger-agent
+ * IMPORTANT: The payload includes snUsername and snPassword so the Cloudflare
+ * Worker can authenticate REST API write-back calls to your ServiceNow instance.
  * ============================================================================
  */
 
 (function executeDeclarativeAction(inputs, outputs) {
-    // 1. Live Cloudflare Edge Worker URL
     var WORKER_URL = 'https://aiagent.kowshik0105.workers.dev/api/servicenow/trigger-agent';
     
-    // 2. Extract current record sys_id from Workspace Action inputs
     var record = inputs.current || current;
     var riskSysId = record.getValue('sys_id');
     var riskName = record.getValue('name') || record.getValue('short_description') || 'Risk Record';
 
     gs.info('[Declarative Action AI Agent] Triggering Cloudflare Worker for: ' + riskName + ' (' + riskSysId + ')');
 
-    // 3. Build AI Agent Payload (includes live instance URL so Cloudflare connects to your active PDI)
     var instanceUrl = gs.getProperty('glide.servlet.uri') || 'https://dev192667.service-now.com/';
+
+    // Credentials for Cloudflare Worker to write controls back to YOUR ServiceNow instance
+    // Can also be stored as System Properties: x_wissd_ema.admin_username / x_wissd_ema.admin_password
+    var snUsername = gs.getProperty('x_wissd_ema.admin_username') || 'admin';
+    var snPassword = gs.getProperty('x_wissd_ema.admin_password') || 'og%39hZNG+kR';
+
     var payload = {
         "platform": "servicenow",
         "agent": "risk-control-mapping",
         "targetId": riskSysId,
         "riskSysId": riskSysId,
         "instanceUrl": instanceUrl,
+        "snUsername": snUsername,
+        "snPassword": snPassword,
         "source": "Next Experience Workspace Declarative Action",
         "triggeredBy": gs.getUserName()
     };
 
     try {
-        // 4. Send REST Request to Cloudflare Worker
         var request = new sn_ws.RESTMessageV2();
         request.setEndpoint(WORKER_URL);
         request.setHttpMethod('POST');
@@ -55,22 +56,22 @@
         if (httpStatus == 200) {
             var json = JSON.parse(responseBody);
 
-            if (json.success) {
-                var message = '🤖 <b>AI Agent Completed (Declarative Action):</b><br/>';
-                message += (json.summary || 'Mitigating risk controls analyzed and mapped successfully.');
+            if (json.success && json.result && json.result.success) {
+                var details = json.result.details || {};
+                var matches = details.matches || [];
+                var message = 'AI Agent Mapped ' + matches.length + ' control(s) to Risk: ' + riskName;
                 gs.addInfoMessage(message);
             } else {
-                gs.addErrorMessage('⚠️ <b>AI Agent Warning:</b> ' + (json.error || 'Execution returned non-success payload.'));
+                gs.addErrorMessage('AI Agent Warning: ' + (json.error || json.summary || 'Non-success payload.'));
             }
         } else {
-            gs.addErrorMessage('❌ <b>Cloudflare Edge Call Failed:</b> HTTP ' + httpStatus + ' - ' + responseBody);
+            gs.addErrorMessage('Cloudflare Edge Call Failed: HTTP ' + httpStatus + ' - ' + responseBody);
         }
     } catch (ex) {
-        gs.addErrorMessage('❌ <b>Declarative Action Exception:</b> ' + ex.message);
+        gs.addErrorMessage('Declarative Action Exception: ' + ex.message);
         gs.error('[Declarative Action AI Agent Error] ' + ex.message);
     }
 
-    // Refresh workspace record view so the Controls related list updates immediately
     if (typeof action !== 'undefined' && action.setRedirectURL) {
         action.setRedirectURL(record);
     }

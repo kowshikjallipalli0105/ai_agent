@@ -7,6 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "production"
 DEFAULT_PLATFORM = "servicenow"
+SERVICENOW_USE_LIVE = "true"
 
 # Note: Set sensitive secrets via 'npx wrangler secret put KEY_NAME' or in .dev.vars for local testing:
 # GEMINI_API_KEY

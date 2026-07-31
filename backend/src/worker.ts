@@ -166,8 +166,11 @@ export default {
         const customInstanceUrl = body.instanceUrl || body.instance_url || request.headers.get('X-ServiceNow-Instance');
         let activeSnAdapter = servicenowAdapter;
         if (customInstanceUrl) {
-          process.env.SERVICENOW_INSTANCE_URL = customInstanceUrl.endsWith('/') ? customInstanceUrl : customInstanceUrl + '/';
           activeSnAdapter = new ServiceNowAdapter();
+          // Use credentials from payload (sent by declarative action) or fall back to env secrets
+          const snUsername = body.snUsername || process.env.SERVICENOW_USERNAME || 'admin';
+          const snPassword = body.snPassword || process.env.SERVICENOW_PASSWORD || '';
+          activeSnAdapter.setLiveCredentials(customInstanceUrl, snUsername, snPassword);
         }
 
         if (!targetId) {
