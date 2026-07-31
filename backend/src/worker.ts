@@ -164,8 +164,10 @@ export default {
 
         // Dynamically override instance URL from payload or header if provided by ServiceNow
         const customInstanceUrl = body.instanceUrl || body.instance_url || request.headers.get('X-ServiceNow-Instance');
+        let activeSnAdapter = servicenowAdapter;
         if (customInstanceUrl) {
           process.env.SERVICENOW_INSTANCE_URL = customInstanceUrl.endsWith('/') ? customInstanceUrl : customInstanceUrl + '/';
+          activeSnAdapter = new ServiceNowAdapter();
         }
 
         if (!targetId) {
@@ -188,13 +190,13 @@ export default {
 
           await withTrace('servicenow-button-trigger', { platform, agent, targetId }, async () => {
             if (agent === 'risk-control-mapping') {
-              const coreAgent = new RiskControlMappingAgent(servicenowAdapter, llmClient);
+              const coreAgent = new RiskControlMappingAgent(activeSnAdapter, llmClient);
               result = await coreAgent.execute(targetId);
             } else if (agent === 'control-effectiveness') {
-              const coreAgent = new ControlEffectivenessAgent(servicenowAdapter, llmClient);
+              const coreAgent = new ControlEffectivenessAgent(activeSnAdapter, llmClient);
               result = await coreAgent.execute(targetId);
             } else if (agent === 'inherent-assessment') {
-              const coreAgent = new InherentAssessmentAgent(servicenowAdapter, llmClient);
+              const coreAgent = new InherentAssessmentAgent(activeSnAdapter, llmClient);
               result = await coreAgent.execute(targetId);
             } else {
               throw new Error(`Unsupported agent type: ${agent}`);
@@ -244,14 +246,18 @@ export default {
       // Universal Run Agent Endpoint
       if (path === '/api/run-agent' && method === 'POST') {
         const body: any = await request.json().catch(() => ({}));
-        const { platform, agent, targetId } = body;
+        const { platform, agent, targetId, instanceUrl } = body;
+
+        if (instanceUrl && platform === 'servicenow') {
+          process.env.SERVICENOW_INSTANCE_URL = instanceUrl.endsWith('/') ? instanceUrl : instanceUrl + '/';
+        }
 
         if (!platform || !agent || !targetId) {
           return jsonResponse({ error: 'Missing parameters platform, agent, or targetId.' }, 400);
         }
 
         let adapter;
-        if (platform === 'servicenow') adapter = servicenowAdapter;
+        if (platform === 'servicenow') adapter = new ServiceNowAdapter();
         else if (platform === 'salesforce') adapter = salesforceAdapter;
         else return jsonResponse({ error: `Unsupported platform adapter: ${platform}` }, 400);
 
