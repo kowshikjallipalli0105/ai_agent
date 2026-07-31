@@ -8,43 +8,33 @@
  * Implemented As: Script
  * ============================================================================
  * PASTE THIS ENTIRE SCRIPT into the ServiceNow Declarative Action script field.
+ * NOTE: NO function wrapper - declarative action scripts run in flat scope.
  * ============================================================================
  */
 
-(function executeDeclarativeAction(inputs, outputs) {
+var WORKER_URL = 'https://aiagent.kowshik0105.workers.dev/api/servicenow/trigger-agent';
 
-    // ---- 1. Config ----
-    var WORKER_URL = 'https://aiagent.kowshik0105.workers.dev/api/servicenow/trigger-agent';
+// Get the current Risk record sys_id from "current" (always available in SN scripts)
+var riskSysId = '';
+var riskName  = '';
 
-    // ---- 2. Get the current Risk record ----
-    // In Next Experience Declarative Actions, "current" is available directly
-    var riskSysId = '';
-    var riskName = '';
+try {
+    riskSysId = current.getValue('sys_id') || current.sys_id.toString();
+    riskName  = current.getValue('name') || current.getValue('short_description') || 'Risk';
+} catch (e) {
+    gs.error('[EMA] Could not read record: ' + e.message);
+}
 
-    try {
-        if (current && current.sys_id) {
-            riskSysId = current.getValue('sys_id') || current.sys_id.toString();
-            riskName  = current.getValue('name') || current.getValue('short_description') || 'Risk';
-        } else if (inputs && inputs.current) {
-            riskSysId = inputs.current.getValue('sys_id');
-            riskName  = inputs.current.getValue('name') || 'Risk';
-        }
-    } catch(e) {
-        gs.error('[EMA] Could not read record: ' + e.message);
-    }
+if (!riskSysId) {
+    gs.addErrorMessage('EMA Agent: Could not determine Risk sys_id. Please refresh and try again.');
+}
 
-    if (!riskSysId) {
-        gs.addErrorMessage('EMA Agent: Could not read the Risk record sys_id. Please refresh and try again.');
-        return;
-    }
-
+if (riskSysId) {
     gs.info('[EMA] Starting map_control_using_ema for sys_id=' + riskSysId + ' name=' + riskName);
 
-    // ---- 3. Build payload ----
-    var instanceUrl = gs.getProperty('glide.servlet.uri');
-    if (!instanceUrl) instanceUrl = 'https://dev192667.service-now.com/';
+    var instanceUrl = gs.getProperty('glide.servlet.uri') || 'https://dev192667.service-now.com/';
 
-    var payload = JSON.stringify({
+    var payloadObj = {
         platform:    'servicenow',
         agent:       'risk-control-mapping',
         targetId:    riskSysId,
@@ -54,51 +44,44 @@
         snPassword:  'og%39hZNG+kR',
         source:      'map_control_using_ema declarative action',
         triggeredBy: gs.getUserName()
-    });
+    };
 
-    gs.info('[EMA] Calling worker: ' + WORKER_URL + ' with payload targetId=' + riskSysId);
+    var payloadStr = JSON.stringify(payloadObj);
+    gs.info('[EMA] Calling Cloudflare Worker. targetId=' + riskSysId);
 
-    // ---- 4. Call Cloudflare Worker ----
     try {
         var rm = new sn_ws.RESTMessageV2();
         rm.setEndpoint(WORKER_URL);
         rm.setHttpMethod('POST');
         rm.setRequestHeader('Content-Type', 'application/json');
         rm.setRequestHeader('Accept', 'application/json');
-        rm.setRequestBody(payload);
-        rm.setHttpTimeout(55000); // 55 second timeout (Cloudflare Worker has 30s AI budget)
+        rm.setRequestBody(payloadStr);
+        rm.setHttpTimeout(55000);
 
         var resp   = rm.execute();
         var status = resp.getStatusCode();
         var body   = resp.getBody();
 
-        gs.info('[EMA] Worker response HTTP ' + status + ': ' + body);
+        gs.info('[EMA] Worker HTTP ' + status + ' response: ' + body);
 
         if (status == 200 || status == 201) {
-            var json = new JSON().decode(body);
+            var result = new JSON().decode(body);
 
-            if (json && json.success && json.result && json.result.success) {
-                var details = json.result.details || {};
-                var matched = details.matches || [];
-                gs.addInfoMessage(
-                    'AI Agent mapped ' + matched.length + ' control(s) to "' + riskName +
-                    '". Refresh the page to see them in the Controls related list.'
-                );
-            } else if (json && json.success) {
-                gs.addInfoMessage('AI Agent: ' + (json.summary || 'Controls processed.'));
+            if (result && result.success && result.result && result.result.success) {
+                var matched = (result.result.details && result.result.details.matches) ? result.result.details.matches : [];
+                gs.addInfoMessage('AI Agent mapped ' + matched.length + ' control(s) to "' + riskName + '". Refresh to see them in the Controls related list.');
+            } else if (result && result.success) {
+                gs.addInfoMessage('AI Agent: ' + (result.summary || 'Controls processed.'));
             } else {
-                gs.addErrorMessage(
-                    'AI Agent returned an error: ' +
-                    (json ? (json.error || json.summary || JSON.stringify(json)) : body)
-                );
+                var errMsg = result ? (result.error || result.summary || JSON.stringify(result)) : body;
+                gs.addErrorMessage('AI Agent error: ' + errMsg);
             }
         } else {
             gs.addErrorMessage('EMA Worker HTTP Error ' + status + ': ' + body);
         }
 
-    } catch(ex) {
+    } catch (ex) {
         gs.addErrorMessage('EMA Agent Exception: ' + ex.message);
-        gs.error('[EMA] Exception calling Cloudflare Worker: ' + ex.message);
+        gs.error('[EMA] Exception: ' + ex.message);
     }
-
-})(inputs, outputs);
+}
