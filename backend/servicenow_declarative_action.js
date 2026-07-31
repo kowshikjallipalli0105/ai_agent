@@ -4,8 +4,8 @@
  * ============================================================================
  * Location: Declarative Actions -> Form Actions (sys_declarative_action_assignment)
  * Table: Risk [sn_risk_risk] (or Assessment Instance [sn_risk_advanced_risk_assessment_instance])
- * Action Label: Assess Risk with AI Agent
- * Action Name: assess_risk_with_ai_declarative
+ * Action Label: Map Control Using Ema
+ * Action Name: map_control_using_ema
  * Implemented As: Script (or UX Action Payload / Server Script)
  * Form Location: Form Header
  * 
