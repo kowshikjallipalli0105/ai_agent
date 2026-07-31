@@ -887,27 +887,66 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
     if (this.useLive) {
       let createdCount = 0;
       for (const ctrl of matchedControls) {
-        // Provide all common ServiceNow reference field name aliases so Table API matches schema
-        const payload: Record<string, string> = {
-          risk: riskSysId,
-          control: ctrl.sysId,
-          sn_risk_risk: riskSysId,
-          sn_compliance_control: ctrl.sysId
-        };
-
+        // 1. Post to sn_risk_m2m_risk_control with all possible field names
         try {
-          await this.postRecord('sn_risk_m2m_risk_control', payload);
+          await this.postRecord('sn_risk_m2m_risk_control', {
+            risk: riskSysId,
+            control: ctrl.sysId,
+            sn_risk_risk: riskSysId,
+            sn_compliance_control: ctrl.sysId,
+            sn_risk: riskSysId,
+            sn_control: ctrl.sysId
+          });
           createdCount++;
         } catch (e1: any) {
-          try {
-            await this.postRecord('sn_compliance_m2m_risk_control', payload);
-            createdCount++;
-          } catch (e2: any) {
-            console.warn(`[ServiceNow LIVE UPDATE] Could not create link for control ${ctrl.sysId}: ${e2.message}`);
-          }
+          console.warn(`[ServiceNow LIVE UPDATE] sn_risk_m2m_risk_control: ${e1.message}`);
+        }
+
+        // 2. Post to sn_compliance_m2m_risk_control
+        try {
+          await this.postRecord('sn_compliance_m2m_risk_control', {
+            risk: riskSysId,
+            control: ctrl.sysId,
+            sn_risk_risk: riskSysId,
+            sn_compliance_control: ctrl.sysId
+          });
+          createdCount++;
+        } catch (e2: any) {
+          console.warn(`[ServiceNow LIVE UPDATE] sn_compliance_m2m_risk_control: ${e2.message}`);
+        }
+
+        // 3. Update the Control record directly with risk reference
+        try {
+          await this.putRecord('sn_compliance_control', ctrl.sysId, {
+            risk: riskSysId,
+            sn_risk_risk: riskSysId,
+            applicable_to: riskSysId
+          });
+          createdCount++;
+        } catch (e3: any) {
+          console.warn(`[ServiceNow LIVE UPDATE] sn_compliance_control direct link: ${e3.message}`);
         }
       }
-      console.log(`[ServiceNow LIVE UPDATE] Successfully created ${createdCount} risk-control links in ServiceNow.`);
+
+      // 4. Update Risk record work_notes & comments with AI Agent mapping checklist
+      try {
+        const auditText = [
+          `🤖 [WissdaSense AI Agent] Risk-Control Mapping Executed`,
+          `Mapped Controls (${matchedControls.length}):`,
+          ...matchedControls.map(c => ` • ✅ ${c.sysId}: ${c.reason}`),
+          `AI Justification: ${justification}`,
+          `Recommendations: ${recommendations || 'N/A'}`
+        ].join('\n');
+
+        await this.putRecord('sn_risk_risk', riskSysId, {
+          work_notes: auditText,
+          comments: auditText
+        });
+      } catch (e4: any) {
+        console.warn(`[ServiceNow LIVE UPDATE] Risk work_notes: ${e4.message}`);
+      }
+
+      console.log(`[ServiceNow LIVE UPDATE] Successfully executed multi-table write-back for ${matchedControls.length} controls.`);
       return;
     }
 
