@@ -1,20 +1,13 @@
 ﻿/**
  * ============================================================================
  * ServiceNow Declarative Action - Map Control Using Ema
- * ============================================================================
- * Action Name:  map_control_using_ema
- * Action Label: Map Control Using Ema
- * Table:        sn_risk_risk
- * Implemented As: Script
- * ============================================================================
- * PASTE THIS ENTIRE SCRIPT into the ServiceNow Declarative Action script field.
- * NOTE: NO function wrapper - declarative action scripts run in flat scope.
+ * Action Name:  map_control_using_ema  |  Table: sn_risk_risk
+ * NOTE: No function wrapper - runs flat in ServiceNow script scope.
  * ============================================================================
  */
 
 var WORKER_URL = 'https://aiagent.kowshik0105.workers.dev/api/servicenow/trigger-agent';
 
-// Get the current Risk record sys_id from "current" (always available in SN scripts)
 var riskSysId = '';
 var riskName  = '';
 
@@ -30,11 +23,11 @@ if (!riskSysId) {
 }
 
 if (riskSysId) {
-    gs.info('[EMA] Starting map_control_using_ema for sys_id=' + riskSysId + ' name=' + riskName);
+    gs.info('[EMA] Starting for sys_id=' + riskSysId + ' name=' + riskName);
 
     var instanceUrl = gs.getProperty('glide.servlet.uri') || 'https://dev192667.service-now.com/';
 
-    var payloadObj = {
+    var payloadStr = JSON.stringify({
         platform:    'servicenow',
         agent:       'risk-control-mapping',
         targetId:    riskSysId,
@@ -44,10 +37,7 @@ if (riskSysId) {
         snPassword:  'og%39hZNG+kR',
         source:      'map_control_using_ema declarative action',
         triggeredBy: gs.getUserName()
-    };
-
-    var payloadStr = JSON.stringify(payloadObj);
-    gs.info('[EMA] Calling Cloudflare Worker. targetId=' + riskSysId);
+    });
 
     try {
         var rm = new sn_ws.RESTMessageV2();
@@ -62,26 +52,31 @@ if (riskSysId) {
         var status = resp.getStatusCode();
         var body   = resp.getBody();
 
-        gs.info('[EMA] Worker HTTP ' + status + ' response: ' + body);
+        gs.info('[EMA] Worker HTTP ' + status + ': ' + body);
 
         if (status == 200 || status == 201) {
-            var result = new JSON().decode(body);
+            // Use JSON.parse (NOT new JSON().decode - JSON is not a constructor in Rhino)
+            var result = JSON.parse(body);
 
             if (result && result.success && result.result && result.result.success) {
-                var matched = (result.result.details && result.result.details.matches) ? result.result.details.matches : [];
-                gs.addInfoMessage('AI Agent mapped ' + matched.length + ' control(s) to "' + riskName + '". Refresh to see them in the Controls related list.');
+                var details = result.result.details || {};
+                var matched = details.matches || [];
+                gs.addInfoMessage(
+                    'AI Agent mapped ' + matched.length + ' control(s) to "' + riskName +
+                    '". Refresh the page to see them in the Controls related list.'
+                );
             } else if (result && result.success) {
                 gs.addInfoMessage('AI Agent: ' + (result.summary || 'Controls processed.'));
             } else {
-                var errMsg = result ? (result.error || result.summary || JSON.stringify(result)) : body;
-                gs.addErrorMessage('AI Agent error: ' + errMsg);
+                var errDetail = result ? (result.error || result.summary || body) : body;
+                gs.addErrorMessage('AI Agent error: ' + errDetail);
             }
         } else {
             gs.addErrorMessage('EMA Worker HTTP Error ' + status + ': ' + body);
         }
 
     } catch (ex) {
-        gs.addErrorMessage('EMA Agent Exception: ' + ex.message);
+        gs.addErrorMessage('EMA Exception: ' + ex.message);
         gs.error('[EMA] Exception: ' + ex.message);
     }
 }
