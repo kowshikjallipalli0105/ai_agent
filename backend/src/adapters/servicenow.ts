@@ -106,10 +106,10 @@ export class ServiceNowAdapter extends BaseGRCAdapter {
 
   constructor() {
     super();
-    this.useLive = process.env.SERVICENOW_USE_LIVE === 'true';
     this.instanceUrl = process.env.SERVICENOW_INSTANCE_URL || '';
     const username = process.env.SERVICENOW_USERNAME || '';
     const password = process.env.SERVICENOW_PASSWORD || '';
+    this.useLive = process.env.SERVICENOW_USE_LIVE === 'true' || (!!this.instanceUrl && !!username);
     if (username && password) {
       this.authHeader = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
     }
